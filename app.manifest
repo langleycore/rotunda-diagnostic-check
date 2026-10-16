@@ -4,8 +4,8 @@
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
     <security>
       <requestedPrivileges xmlns="urn:schemas-microsoft-com:asm.v3">
-        <!-- asInvoker so a double-click always opens a window. requireAdministrator made No on the prompt look like the exe never started. -->
-        <requestedExecutionLevel level="asInvoker" uiAccess="false"/>
+        <!-- Needs admin. Firewall, the event log, and some Ford checks come back blank otherwise. -->
+        <requestedExecutionLevel level="requireAdministrator" uiAccess="false"/>
       </requestedPrivileges>
     </security>
   </trustInfo>
