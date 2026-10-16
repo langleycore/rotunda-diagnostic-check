@@ -1444,8 +1444,9 @@ function Get-SoftwareLogCheck {
         $pick += $item
     }
 
-    $badLine = 'error|exception|fatal|failed|failure|unable to|cannot |could not|timeout|timed out|access is denied|0x800|hresult|authentication|license|communication|no device|not connected'
-    $skipLine = 'error code:\s*0\b|errorcount\s*[:=]\s*0|0 error|no error|successfully|information\]'
+    # whole words. "license" and "Exceptions" were marking good lines as failures.
+    $badLine = '\berror\b|\bfatal\b|\bfailed\b|\bfailure\b|\bunable to\b|\bcannot\b|\bcould not\b|\btimeout\b|\btimed out\b|access is denied|\b0x800|hresult|\bcrash\b|no device|not connected'
+    $skipLine = 'error code:\s*0\b|errorcount\s*[:=]\s*0|\b0 errors?\b|no error|successfully|\bsucceeded\b|information\]'
 
     $hits = New-Object System.Collections.Generic.List[object]
     foreach ($item in $pick) {
@@ -1500,7 +1501,7 @@ function Get-SoftwareLogCheck {
         if ($g.Count -gt 1) { $times = " ($($g.Count) times, file $($sample.Name), $when)" }
         else { $times = " ($($sample.Name), $when)" }
         $level = 'Check'
-        if ($sample.Line -match 'exception|fatal|access is denied|0x800|hresult|crash') { $level = 'Problem' }
+        if ($sample.Line -match '\bfatal\b|access is denied|\b0x800|hresult|\bcrash\b') { $level = 'Problem' }
         Add-Finding $level 'Software logs' ("{0}{1}: {2}" -f $sample.Product, $times, $sample.Line)
         $shown++
     }
