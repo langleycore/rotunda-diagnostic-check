@@ -134,7 +134,7 @@ internal static class Program
         Console.WriteLine("Rotunda diagnostic check");
         Console.WriteLine();
 
-        string script = LoadScript(exeDir);
+        string script = LoadScript();
         if (script == null)
         {
             WaitForEnter();
@@ -183,23 +183,28 @@ internal static class Program
         catch { }
     }
 
-    // Script stays in its own file, same folder as the exe.
-    // Packing it inside the exe was a mistake. Defender read that build as a trojan.
-    private static string LoadScript(string exeDir)
+    // One file to hand somebody. The check script is stored in the exe.
+    private static string LoadScript()
     {
-        string path = Path.Combine(exeDir, "RotundaDiagnosticCheck.ps1");
-        if (!File.Exists(path))
+        var asm = Assembly.GetExecutingAssembly();
+        Stream stream = asm.GetManifestResourceStream("Rotunda.Script.ps1");
+        if (stream == null)
         {
-            Console.WriteLine("RotundaDiagnosticCheck.ps1 has to be in the same folder as this program.");
+            Console.WriteLine("This build is missing the check script.");
             return null;
         }
 
-        var sb = new StringBuilder();
-        foreach (string line in File.ReadAllLines(path))
+        using (stream)
+        using (var reader = new StreamReader(stream, Encoding.UTF8))
         {
-            if (line.StartsWith("#Requires", StringComparison.OrdinalIgnoreCase)) continue;
-            sb.AppendLine(line);
+            var sb = new StringBuilder();
+            string line;
+            while ((line = reader.ReadLine()) != null)
+            {
+                if (line.StartsWith("#Requires", StringComparison.OrdinalIgnoreCase)) continue;
+                sb.AppendLine(line);
+            }
+            return sb.ToString();
         }
-        return sb.ToString();
     }
 }
