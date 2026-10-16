@@ -131,29 +131,56 @@ internal static class Program
         string exeDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
         Environment.SetEnvironmentVariable("ROTUNDA_DIR", exeDir);
 
+        Console.WriteLine("Rotunda diagnostic check");
+        Console.WriteLine();
+
         string script = LoadScript(exeDir);
-        if (script == null) return 1;
+        if (script == null)
+        {
+            WaitForEnter();
+            return 1;
+        }
 
         var host = new RotundaHost();
-        using (var runspace = System.Management.Automation.Runspaces.RunspaceFactory.CreateRunspace(host))
+        try
         {
-            runspace.Open();
-            using (var ps = PowerShell.Create())
+            using (var runspace = System.Management.Automation.Runspaces.RunspaceFactory.CreateRunspace(host))
             {
-                ps.Runspace = runspace;
-                ps.AddScript(script);
-                try { ps.Invoke(); }
-                catch (Exception ex)
+                runspace.Open();
+                using (var ps = PowerShell.Create())
                 {
-                    if (host.ExitCode == 0) Console.WriteLine(ex.Message);
-                }
-                foreach (var err in ps.Streams.Error)
-                {
-                    Console.WriteLine(err.ToString());
+                    ps.Runspace = runspace;
+                    ps.AddScript(script);
+                    try { ps.Invoke(); }
+                    catch (Exception ex)
+                    {
+                        if (host.ExitCode == 0) Console.WriteLine(ex.Message);
+                    }
+                    foreach (var err in ps.Streams.Error)
+                    {
+                        Console.WriteLine(err.ToString());
+                    }
                 }
             }
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            WaitForEnter();
+            return 1;
+        }
+
+        // The script only waits when PowerShell itself is the host. From this exe the window was closing on its own.
+        WaitForEnter();
         return host.ExitCode;
+    }
+
+    private static void WaitForEnter()
+    {
+        Console.WriteLine();
+        Console.WriteLine("Press Enter to close.");
+        try { Console.ReadLine(); }
+        catch { }
     }
 
     // Script stays in its own file, same folder as the exe.
